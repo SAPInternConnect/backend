@@ -196,7 +196,6 @@ exports.updateUserDetails = (request, response) => {
 
 exports.getAllUsers = (request, response) => {
     let users = db.collection('users');
-
     users.get().then(users => {
         let listOfUsers = [];
 
