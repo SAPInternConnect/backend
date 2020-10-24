@@ -193,3 +193,28 @@ exports.updateUserDetails = (request, response) => {
 			});
 		});
 };
+
+exports.getAllUsers = (request, response) => {
+    let users = db.collection('users');
+
+    users.get().then(users => {
+        let listOfUsers = [];
+
+        users.forEach(user => {
+            listOfUsers.push({
+                userName: user.data().username,
+                firstName: user.data().firstName,
+                lastName: user.data().lastName,
+                email: user.data().email,
+                userId: user.data().userId
+            });
+        })
+        
+        return response.json(listOfUsers);
+    }).catch(error => {
+        console.log(error);
+        return response.status(404).json({
+            message: 'Users not found'
+        })
+    })
+}

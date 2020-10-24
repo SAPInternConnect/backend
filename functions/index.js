@@ -7,7 +7,8 @@ const {
 	signUpUser,
 	uploadProfilePhoto,
 	getUserDetail,
-	updateUserDetails,
+    updateUserDetails,
+    getAllUsers,
 } = require('./APIs/users');
 
 app.post('/login', loginUser);
@@ -15,5 +16,6 @@ app.post('/signup', signUpUser);
 app.post('/user/image', auth, uploadProfilePhoto);
 app.get('/user', auth, getUserDetail);
 app.post('/user', auth, updateUserDetails);
+app.get('/users', getAllUsers)
 
 exports.api = functions.https.onRequest(app);
