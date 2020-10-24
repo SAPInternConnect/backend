@@ -203,13 +203,9 @@ exports.getAllUsers = (request, response) => {
 			let listOfUsers = [];
 
 			users.forEach((user) => {
-				listOfUsers.push({
-					userName: user.data().username,
-					firstName: user.data().firstName,
-					lastName: user.data().lastName,
-					email: user.data().email,
-					userId: user.data().userId,
-				});
+				listOfUsers.push(
+                    user.data()
+                );
 			});
 
 			return response.json(listOfUsers);
