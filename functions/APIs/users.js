@@ -231,7 +231,7 @@ exports.getAllUsers = (request, response) => {
 
 exports.addFriend = (request, response) => {
     const user = request.user.username;
-    const friend = request.body.username;
+    const friend = request.body.friend;
 
     db.collection('friends')
         .where('friends', 'array-contains', user)
@@ -267,6 +267,20 @@ exports.addFriend = (request, response) => {
                         db.collection('friends').doc(friendship.id).update({
                             status: 'accepted',
                         });
+                        db.collection('users')
+                            .doc(user)
+                            .update({
+                                friend_list: admin.firestore.FieldValue.arrayUnion(
+                                    friend,
+                                ),
+                            });
+                        db.collection('users')
+                            .doc(friend)
+                            .update({
+                                friend_list: admin.firestore.FieldValue.arrayUnion(
+                                    user,
+                                ),
+                            });
                         return response
                             .status(200)
                             .json({ body: 'Added as friend!' });
@@ -303,30 +317,61 @@ exports.addFriend = (request, response) => {
 };
 
 exports.getFriends = (request, response) => {
-    db.collection('friends')
+    let friend_usernames = [];
+    db.collection('users')
+        .doc(request.user.username)
         .get()
         .then(data => {
-            let users = [];
-            data.forEach(doc => {
-                if (
-                    doc.data().username != request.user.username &&
-                    doc.data().accepted_by != request.user.username &&
-                    doc.data().status == 'requested'
-                ) {
-                    users.push({
-                        title: doc.data().title,
-                        username: doc.data().username,
-                        body: doc.data().body,
-                        type: doc.data().type,
-                        status: doc.data().status,
-                        location: doc.data().location,
-                        latitude: doc.data().latitude,
-                        longitude: doc.data().longitude,
-                        createdAt: doc.data().createdAt,
-                    });
+            console.log('friend_list', data.data().friend_list);
+            let friend_list = data.data().friend_list;
+            for (let i = 0; i < friend_list.length; i++) {
+                if (friend_list[i]) {
+                    friend_usernames.push(friend_list[i]);
                 }
-            });
-            return response.json(users);
+            }
+        })
+        .then(() => {
+            let users = db.collection('users');
+            let listOfUsers = [];
+            users
+                .get()
+                .then(users => {
+                    users.forEach(user => {
+                        console.log('user', user.data().username);
+                        listOfUsers.push({
+                            userName: user.data().username,
+                            firstName: user.data().firstName,
+                            lastName: user.data().lastName,
+                            email: user.data().email,
+                            userId: user.data().userId,
+                        });
+                    });
+
+                    return listOfUsers;
+                })
+                .then(listOfUsers => {
+                    let friend_objects = [];
+                    console.log('user list inside', listOfUsers);
+                    friend_usernames.forEach(friend => {
+                        listOfUsers.forEach(user => {
+                            if (friend == user.username) {
+                                friend_objects.push({
+                                    username: user.data().username,
+                                    lastName: user.data().lastName,
+                                    email: user.data().email,
+                                    userId: user.data().userId,
+                                });
+                            }
+                        });
+                    });
+                    return response.json(friend_objects);
+                })
+                .catch(error => {
+                    console.log(error);
+                    return response.status(404).json({
+                        message: 'Users not found',
+                    });
+                });
         })
         .catch(err => {
             console.error(err);
