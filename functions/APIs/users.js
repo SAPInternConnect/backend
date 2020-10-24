@@ -195,26 +195,85 @@ exports.updateUserDetails = (request, response) => {
 };
 
 exports.getAllUsers = (request, response) => {
-    let users = db.collection('users');
+	let users = db.collection('users');
 
-    users.get().then(users => {
-        let listOfUsers = [];
+	users
+		.get()
+		.then((users) => {
+			let listOfUsers = [];
 
-        users.forEach(user => {
-            listOfUsers.push({
-                userName: user.data().username,
-                firstName: user.data().firstName,
-                lastName: user.data().lastName,
-                email: user.data().email,
-                userId: user.data().userId
-            });
-        })
-        
-        return response.json(listOfUsers);
-    }).catch(error => {
-        console.log(error);
-        return response.status(404).json({
-            message: 'Users not found'
-        })
-    })
-}
+			users.forEach((user) => {
+				listOfUsers.push({
+					userName: user.data().username,
+					firstName: user.data().firstName,
+					lastName: user.data().lastName,
+					email: user.data().email,
+					userId: user.data().userId,
+				});
+			});
+
+			return response.json(listOfUsers);
+		})
+		.catch((error) => {
+			console.log(error);
+			return response.status(404).json({
+				message: 'Users not found',
+			});
+		});
+};
+exports.addFriend = (request, response) => {
+	// 1. I have already been added as friend
+
+	// 2. I already have added this person as a friend
+
+	const newFriendship = {
+		user1: request.user.username,
+		user2: request.body.username,
+		friends: [request.user.username, request.body.username],
+		status: 'pending',
+	};
+
+	db.collection('friends')
+		.add(newFriendship)
+		.then((doc) => {
+			const responseFriendship = newFriendship;
+			responseFriendship.id = doc.id;
+			return response.json(responseFriendship);
+		})
+		.catch((error) => {
+			console.error(error);
+			response.status(500).json({ error: 'Something went wrong' });
+		});
+};
+
+exports.getFriends = (request, response) => {
+	db.collection('friends')
+		.get()
+		.then((data) => {
+			let users = [];
+			data.forEach((doc) => {
+				if (
+					doc.data().username != request.user.username &&
+					doc.data().accepted_by != request.user.username &&
+					doc.data().status == 'requested'
+				) {
+					users.push({
+						title: doc.data().title,
+						username: doc.data().username,
+						body: doc.data().body,
+						type: doc.data().type,
+						status: doc.data().status,
+						location: doc.data().location,
+						latitude: doc.data().latitude,
+						longitude: doc.data().longitude,
+						createdAt: doc.data().createdAt,
+					});
+				}
+			});
+			return response.json(users);
+		})
+		.catch((err) => {
+			console.error(err);
+			return response.status(500).json({ error: err.code });
+		});
+};
