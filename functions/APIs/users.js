@@ -45,8 +45,11 @@ exports.signUpUser = (request, response) => {
         password: request.body.password,
         confirmPassword: request.body.confirmPassword,
         username: request.body.username,
+        bio: request.body.bio,
+        age: request.body.age,
+        position: request.body.position,
+        city: request.body.city
     };
-
     const { valid, errors } = validateSignUpData(newUser);
 
     if (!valid) return response.status(400).json(errors);
@@ -81,6 +84,10 @@ exports.signUpUser = (request, response) => {
                 phoneNumber: newUser.phoneNumber,
                 country: newUser.country,
                 email: newUser.email,
+                bio: newUser.bio,
+                age: newUser.age,
+                position: newUser.position,
+                city: newUser.city,
                 createdAt: new Date().toISOString(),
                 userId,
             };
@@ -205,26 +212,43 @@ exports.updateUserDetails = (request, response) => {
         });
 };
 
-exports.getAllUsers = (request, response) => {
+exports.getAllUsers = async (request, response) => {
     let users = db.collection('users');
+    let friends = db.collection('friends');
+    
+    const username = request.body.username;
+    const set = new Set();
 
+    friends.get().then(friends => {
+        friends.forEach(friend => {
+            const relationship = friend.data();
+
+            if(relationship.user1 === username || relationship.user2 === username) {
+                set.add(relationship.user1);
+                set.add(relationship.user2);
+            }
+        });
+    })
+    
     users
         .get()
         .then(users => {
             let listOfUsers = [];
 
 			users.forEach((user) => {
-				listOfUsers.push(
-                    user.data()
-                );
+				if(!set.has(user.data().username)) {
+                    listOfUsers.push(
+                        user.data()
+                    );
+                }
 			});
 
             return response.json(listOfUsers);
         })
         .catch(error => {
             console.log(error);
-            return response.status(404).json({
-                message: 'Users not found',
+            return response.status(400).json({
+                message: 'Users get not be fetched',
             });
         });
 };
@@ -333,3 +357,9 @@ exports.getFriends = (request, response) => {
             return response.status(500).json({ error: err.code });
         });
 };
+
+// exports.addInterests = (request, response) => {
+//     const user = db.collection('users').doc(request.body.userId);
+
+    
+// }
