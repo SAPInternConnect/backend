@@ -3,14 +3,14 @@ const app = require('express')();
 const auth = require('./util/auth');
 
 const {
-	loginUser,
-	signUpUser,
-	uploadProfilePhoto,
-	getUserDetail,
-	updateUserDetails,
-	getAllUsers,
-	addFriend,
-	getFriends,
+    loginUser,
+    signUpUser,
+    uploadProfilePhoto,
+    getUserDetail,
+    updateUserDetails,
+    getAllUsers,
+    addFriend,
+    getFriends,
 } = require('./APIs/users');
 
 const { createEvent, getEvents, updateEvent } = require('./APIs/events');
@@ -30,6 +30,6 @@ app.put('/event', updateEvent);
 
 // friends
 app.post('/add_friend', auth, addFriend);
-app.post('/get_friends', auth, getFriends);
+app.get('/friends', auth, getFriends);
 
 exports.api = functions.https.onRequest(app);

@@ -255,7 +255,7 @@ exports.getAllUsers = async (request, response) => {
 
 exports.addFriend = (request, response) => {
     const user = request.user.username;
-    const friend = request.body.username;
+    const friend = request.body.friend;
 
     db.collection('friends')
         .where('friends', 'array-contains', user)
@@ -291,6 +291,20 @@ exports.addFriend = (request, response) => {
                         db.collection('friends').doc(friendship.id).update({
                             status: 'accepted',
                         });
+                        db.collection('users')
+                            .doc(user)
+                            .update({
+                                friend_list: admin.firestore.FieldValue.arrayUnion(
+                                    friend,
+                                ),
+                            });
+                        db.collection('users')
+                            .doc(friend)
+                            .update({
+                                friend_list: admin.firestore.FieldValue.arrayUnion(
+                                    user,
+                                ),
+                            });
                         return response
                             .status(200)
                             .json({ body: 'Added as friend!' });
@@ -327,30 +341,36 @@ exports.addFriend = (request, response) => {
 };
 
 exports.getFriends = (request, response) => {
-    db.collection('friends')
+    let users = db.collection('users');
+    let listOfUsers = [];
+    let friend_usernames = [];
+    let friend_objects = [];
+
+    users
         .get()
-        .then(data => {
-            let users = [];
-            data.forEach(doc => {
-                if (
-                    doc.data().username != request.user.username &&
-                    doc.data().accepted_by != request.user.username &&
-                    doc.data().status == 'requested'
-                ) {
-                    users.push({
-                        title: doc.data().title,
-                        username: doc.data().username,
-                        body: doc.data().body,
-                        type: doc.data().type,
-                        status: doc.data().status,
-                        location: doc.data().location,
-                        latitude: doc.data().latitude,
-                        longitude: doc.data().longitude,
-                        createdAt: doc.data().createdAt,
-                    });
-                }
+        .then(users => {
+            users.forEach(user => {
+                listOfUsers.push(user.data());
             });
-            return response.json(users);
+        })
+        .then(async () => {
+            const data = await users.doc(request.user.username).get();
+            let friend_list = data.data().friend_list;
+            for (let i = 0; i < friend_list.length; i++) {
+                if (friend_list[i]) {
+                    friend_usernames.push(friend_list[i]);
+                }
+            }
+            friend_usernames.forEach(friend => {
+                listOfUsers.forEach(user => {
+                    if (friend == user.username) {
+                        friend_objects.push(user);
+                    }
+                });
+            });
+        })
+        .then(() => {
+            return response.json(friend_objects);
         })
         .catch(err => {
             console.error(err);
