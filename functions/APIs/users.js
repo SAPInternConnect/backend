@@ -213,11 +213,9 @@ exports.getAllUsers = (request, response) => {
         .then(users => {
             let listOfUsers = [];
 
-			users.forEach((user) => {
-				listOfUsers.push(
-                    user.data()
-                );
-			});
+            users.forEach(user => {
+                listOfUsers.push(user.data());
+            });
 
             return response.json(listOfUsers);
         })
@@ -317,61 +315,36 @@ exports.addFriend = (request, response) => {
 };
 
 exports.getFriends = (request, response) => {
+    let users = db.collection('users');
+    let listOfUsers = [];
     let friend_usernames = [];
-    db.collection('users')
-        .doc(request.user.username)
+    let friend_objects = [];
+
+    users
         .get()
-        .then(data => {
-            console.log('friend_list', data.data().friend_list);
+        .then(users => {
+            users.forEach(user => {
+                listOfUsers.push(user.data());
+            });
+        })
+        .then(async () => {
+            const data = await users.doc(request.user.username).get();
             let friend_list = data.data().friend_list;
             for (let i = 0; i < friend_list.length; i++) {
                 if (friend_list[i]) {
                     friend_usernames.push(friend_list[i]);
                 }
             }
+            friend_usernames.forEach(friend => {
+                listOfUsers.forEach(user => {
+                    if (friend == user.username) {
+                        friend_objects.push(user);
+                    }
+                });
+            });
         })
         .then(() => {
-            let users = db.collection('users');
-            let listOfUsers = [];
-            users
-                .get()
-                .then(users => {
-                    users.forEach(user => {
-                        console.log('user', user.data().username);
-                        listOfUsers.push({
-                            userName: user.data().username,
-                            firstName: user.data().firstName,
-                            lastName: user.data().lastName,
-                            email: user.data().email,
-                            userId: user.data().userId,
-                        });
-                    });
-
-                    return listOfUsers;
-                })
-                .then(listOfUsers => {
-                    let friend_objects = [];
-                    console.log('user list inside', listOfUsers);
-                    friend_usernames.forEach(friend => {
-                        listOfUsers.forEach(user => {
-                            if (friend == user.username) {
-                                friend_objects.push({
-                                    username: user.data().username,
-                                    lastName: user.data().lastName,
-                                    email: user.data().email,
-                                    userId: user.data().userId,
-                                });
-                            }
-                        });
-                    });
-                    return response.json(friend_objects);
-                })
-                .catch(error => {
-                    console.log(error);
-                    return response.status(404).json({
-                        message: 'Users not found',
-                    });
-                });
+            return response.json(friend_objects);
         })
         .catch(err => {
             console.error(err);
