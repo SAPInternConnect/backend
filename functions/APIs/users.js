@@ -37,8 +37,12 @@ exports.loginUser = (request, response) => {
 // Sign up
 exports.signUpUser = (request, response) => {
     const newUser = {
-        firstName: request.body.firstName,
-        lastName: request.body.lastName,
+        firstName:
+            request.body.firstName.charAt(0).toUpperCase() +
+            request.body.firstName.slice(1),
+        lastName:
+            request.body.lastName.charAt(0).toUpperCase() +
+            request.body.lastName.slice(1),
         email: request.body.email,
         phoneNumber: '',
         country: '',
@@ -48,7 +52,7 @@ exports.signUpUser = (request, response) => {
         bio: request.body.bio,
         age: request.body.age,
         position: request.body.position,
-        city: request.body.city
+        city: request.body.city,
     };
     const { valid, errors } = validateSignUpData(newUser);
 
@@ -215,7 +219,7 @@ exports.updateUserDetails = (request, response) => {
 exports.getAllUsers = async (request, response) => {
     let users = db.collection('users');
     let friends = db.collection('friends');
-    
+
     const username = request.body.username;
     const set = new Set();
 
@@ -223,25 +227,26 @@ exports.getAllUsers = async (request, response) => {
         friends.forEach(friend => {
             const relationship = friend.data();
 
-            if(relationship.user1 === username || relationship.user2 === username) {
+            if (
+                relationship.user1 === username ||
+                relationship.user2 === username
+            ) {
                 set.add(relationship.user1);
                 set.add(relationship.user2);
             }
         });
-    })
-    
+    });
+
     users
         .get()
         .then(users => {
             let listOfUsers = [];
 
-			users.forEach((user) => {
-				if(!set.has(user.data().username)) {
-                    listOfUsers.push(
-                        user.data()
-                    );
+            users.forEach(user => {
+                if (!set.has(user.data().username)) {
+                    listOfUsers.push(user.data());
                 }
-			});
+            });
 
             return response.json(listOfUsers);
         })
@@ -381,5 +386,4 @@ exports.getFriends = (request, response) => {
 // exports.addInterests = (request, response) => {
 //     const user = db.collection('users').doc(request.body.userId);
 
-    
 // }
